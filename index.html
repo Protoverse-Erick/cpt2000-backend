@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Protoverse Labs | Aqtiva CPT2000 Digital Twin</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+<style>
+:root{
+  --bg:#eef1f6;
+  --card:#ffffff;
+  --card-2:#f7f9fc;
+  --line:#dde3ec;
+  --line-2:#c9d2e0;
+  --txt:#16202e;
+  --txt-2:#475569;
+  --txt-3:#8492a6;
+  --blue:#0b6bcb;
+  --cyan:#0e7490;
+  --green:#15803d;
+  --green-bg:#e9f7ee;
+  --amber:#b45309;
+  --amber-bg:#fdf4e3;
+  --red:#c81e2b;
+  --red-bg:#fdecee;
+  --mono:'JetBrains Mono',ui-monospace,Consolas,monospace;
+  --hdr:52px;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;overflow:hidden}
+body{
+  background:var(--bg); color:var(--txt);
+  font-family:'Inter',system-ui,sans-serif; font-size:13px;
+  -webkit-font-smoothing:antialiased;
+}
+
+/* ================= HEADER ================= */
+header{
+  height:var(--hdr); display:flex; align-items:center; gap:18px;
+  padding:0 16px; background:#fff; border-bottom:1px solid var(--line);
+  box-shadow:0 1px 3px rgba(16,32,56,.06);
+}
+.brand{display:flex;align-items:center;gap:10px;min-width:0}
+.mark{
+  width:28px;height:28px;border-radius:7px;flex:0 0 auto;display:grid;place-items:center;
+  background:linear-gradient(145deg,#0b6bcb,#0e7490);color:#fff;
+  font-weight:700;font-size:10px;letter-spacing:.5px;
+}
+.brand h1{margin:0;font-size:14px;font-weight:650;letter-spacing:.1px;white-space:nowrap}
+.brand h1 span{color:var(--blue)}
+.brand .sub{margin:1px 0 0;font-size:9.5px;color:var(--txt-3);letter-spacing:.7px;text-transform:uppercase}
+.sp{flex:1 1 auto}
+.hstat{display:flex;flex-direction:column;gap:1px;padding:0 12px;border-left:1px solid var(--line)}
+.hstat .k{font-size:8.5px;letter-spacing:1px;text-transform:uppercase;color:var(--txt-3)}
+.hstat .v{font-family:var(--mono);font-size:12px;color:var(--txt);font-weight:500}
+.pill{
+  font-family:var(--mono);font-size:9px;letter-spacing:.8px;padding:4px 8px;border-radius:5px;
+  border:1px solid var(--red);color:var(--red);background:var(--red-bg);white-space:nowrap
+}
+.link{display:flex;align-items:center;gap:7px;font-family:var(--mono);font-size:10.5px;letter-spacing:.6px}
+
+/* ================= LAYOUT ================= */
+.shell{
+  height:calc(100vh - var(--hdr));
+  display:grid; grid-template-columns:316px minmax(0,1fr);
+  gap:10px; padding:10px; min-height:0;
+}
+aside{display:grid;grid-template-rows:auto auto minmax(0,1fr);gap:10px;min-height:0}
+main{display:grid;grid-template-rows:minmax(0,1fr) auto;gap:8px;min-height:0}
+
+.card{
+  background:var(--card); border:1px solid var(--line); border-radius:10px;
+  box-shadow:0 1px 2px rgba(16,32,56,.05); min-height:0; display:flex; flex-direction:column;
+}
+.card-h{
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+  padding:8px 11px;border-bottom:1px solid var(--line);background:var(--card-2);
+  border-radius:10px 10px 0 0;flex:0 0 auto;
+}
+.card-h h2{margin:0;font-size:10px;font-weight:700;letter-spacing:1.1px;text-transform:uppercase;color:var(--txt-2)}
+.card-h .tag{font-family:var(--mono);font-size:8.5px;color:var(--txt-3);letter-spacing:.3px}
+.card-b{padding:10px 11px;min-height:0;overflow:auto}
+.card-b::-webkit-scrollbar{width:6px}
+.card-b::-webkit-scrollbar-thumb{background:var(--line-2);border-radius:3px}
+
+/* ================= MASTER CONTROL ================= */
+.ctrl{margin-bottom:12px}
+.ctrl:last-child{margin-bottom:0}
+.ctrl-top{display:flex;align-items:baseline;justify-content:space-between;gap:6px}
+.ctrl-top .lbl{font-size:10px;letter-spacing:.9px;text-transform:uppercase;color:var(--txt-2);font-weight:600}
+.ctrl-top .val{font-family:var(--mono);font-size:17px;font-weight:600;color:var(--txt)}
+.ctrl-top .val u{text-decoration:none;font-size:10px;color:var(--txt-3);margin-left:3px}
+.ctrl-top .val.ov{color:var(--amber)}
+.ctrl-top .val.warn{color:var(--amber)}
+input[type=range]{
+  -webkit-appearance:none;appearance:none;width:100%;height:20px;background:transparent;margin:4px 0 0;cursor:pointer;
+}
+input[type=range]::-webkit-slider-runnable-track{height:6px;border-radius:3px;background:var(--trk,linear-gradient(90deg,#0b6bcb,#0b6bcb))}
+input[type=range]::-moz-range-track{height:6px;border-radius:3px;background:var(--trk,#0b6bcb)}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;appearance:none;width:16px;height:16px;border-radius:50%;
+  background:#fff;border:2px solid var(--blue);margin-top:-5px;box-shadow:0 1px 3px rgba(16,32,56,.3)
+}
+input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:#fff;border:2px solid var(--blue)}
+.ctrl.ov input[type=range]::-webkit-slider-thumb{border-color:var(--amber)}
+.scale{display:flex;justify-content:space-between;font-family:var(--mono);font-size:8px;color:var(--txt-3);margin-top:1px}
+.scale b{color:var(--txt-2);font-weight:500}
+.btnrow{display:flex;gap:6px;margin-top:8px}
+button.mini{
+  flex:1;font-family:var(--mono);font-size:9px;letter-spacing:.6px;padding:6px 4px;
+  border:1px solid var(--line-2);background:#fff;color:var(--txt-2);border-radius:6px;cursor:pointer
+}
+button.mini:hover{background:var(--card-2);border-color:var(--blue);color:var(--blue)}
+button.mini.danger:hover{border-color:var(--red);color:var(--red);background:var(--red-bg)}
+.ovbox{
+  display:flex;align-items:flex-start;gap:7px;margin-top:8px;padding:7px 8px;border-radius:6px;
+  border:1px dashed var(--amber);background:var(--amber-bg);font-size:9.5px;line-height:1.35;color:#7c4a08
+}
+.ovbox input{margin:1px 0 0;accent-color:var(--amber);flex:0 0 auto}
+.ublock{
+  margin-top:10px;padding:8px;border-radius:6px;border:1px dashed var(--amber);background:var(--amber-bg)
+}
+.ublock .t{font-family:var(--mono);font-size:8.5px;letter-spacing:.8px;color:var(--amber);font-weight:600}
+.ublock .d{font-size:9.5px;color:#7c4a08;line-height:1.35;margin:3px 0 6px}
+.ublock .row{display:flex;gap:6px}
+.ublock input[type=number]{
+  flex:1;font-family:var(--mono);font-size:11px;padding:5px 7px;border:1px solid #d8b271;border-radius:5px;background:#fff;color:var(--txt)
+}
+.ack{
+  margin-top:9px;font-family:var(--mono);font-size:9px;line-height:1.4;padding:6px 8px;border-radius:6px;
+  border:1px solid var(--line);background:var(--card-2);color:var(--txt-2);word-break:break-word
+}
+.ack.ok{border-color:#b7e0c4;background:var(--green-bg);color:#14532d}
+.ack.no{border-color:#f0b9be;background:var(--red-bg);color:#7f1020}
+
+/* ================= TOTALS ================= */
+.totals{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line)}
+.tot{background:#fff;padding:9px 10px}
+.tot .k{font-size:8.5px;letter-spacing:.9px;text-transform:uppercase;color:var(--txt-3)}
+.tot .big{font-family:var(--mono);font-size:21px;font-weight:600;line-height:1.1;margin:4px 0 2px;color:var(--txt)}
+.tot .big u{text-decoration:none;font-size:9px;color:var(--txt-3);margin-left:2px}
+.tot .big.null{color:var(--amber);font-size:15px}
+.tot .ref{font-size:8.5px;color:var(--txt-3);line-height:1.3}
+
+/* ================= INTERLOCKS ================= */
+.ilk{display:flex;align-items:center;gap:9px;padding:6px 0;border-bottom:1px solid #eef1f6}
+.ilk:last-child{border-bottom:0}
+.ilk .name{flex:1;font-size:11px;color:var(--txt);line-height:1.25}
+.ilk .name em{display:block;font-style:normal;font-size:8.5px;color:var(--txt-3);margin-top:1px}
+.ilk .state{font-family:var(--mono);font-size:9px;letter-spacing:.6px}
+.led{width:9px;height:9px;border-radius:50%;flex:0 0 auto;background:#cbd5e1;border:1px solid rgba(0,0,0,.08)}
+.led.ok{background:#22c55e;box-shadow:0 0 0 2px rgba(34,197,94,.20)}
+.led.bad{background:#ef4444;box-shadow:0 0 0 2px rgba(239,68,68,.22);animation:blink 1.1s infinite}
+.led.warn{background:#f59e0b;box-shadow:0 0 0 2px rgba(245,158,11,.20)}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.state.ok{color:var(--green)} .state.bad{color:var(--red)} .state.warn{color:var(--amber)} .state.unk{color:var(--txt-3)}
+.subleds{display:flex;gap:5px;align-items:center;padding:2px 0 6px 18px}
+.subleds .lbl{font-family:var(--mono);font-size:8px;color:var(--txt-3);margin-right:2px}
+.permit{
+  margin-top:9px;border-radius:7px;padding:9px;text-align:center;font-family:var(--mono);
+  font-size:10.5px;letter-spacing:1.1px;border:1px solid var(--line-2);background:var(--card-2);color:var(--txt-3)
+}
+.permit.go{color:var(--green);border-color:#8fd3a6;background:var(--green-bg)}
+.permit.no{color:var(--red);border-color:#f0a9b0;background:var(--red-bg)}
+
+/* ================= NODE BAYS ================= */
+.bays{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:9px;min-height:0}
+.bay{
+  background:#fff;border:1px solid var(--line);border-radius:10px;overflow:hidden;min-height:0;
+  display:grid;grid-template-rows:auto auto auto minmax(0,1fr) auto;
+  box-shadow:0 1px 2px rgba(16,32,56,.05);
+  border-top:3px solid var(--blue);
+}
+.bay.warn{border-color:#eccb8f;border-top-color:var(--amber);background:#fffdf8}
+.bay.fault{border-top-color:var(--red);animation:strobe 1s steps(1,end) infinite}
+@keyframes strobe{
+  0%,49%  {border-color:var(--red);background:#fdecee;box-shadow:0 0 0 3px rgba(200,30,43,.16)}
+  50%,100%{border-color:#f0b9be;background:#fff6f7;box-shadow:0 1px 2px rgba(16,32,56,.05)}
+}
+.bay-h{display:flex;align-items:center;gap:7px;padding:7px 9px;border-bottom:1px solid var(--line);background:var(--card-2)}
+.bay-h .id{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.7px}
+.chip{font-family:var(--mono);font-size:8px;letter-spacing:.6px;padding:2px 5px;border-radius:4px;border:1px solid var(--line-2);color:var(--txt-3)}
+.chip.ok{color:var(--green);border-color:#a8dcbb;background:var(--green-bg)}
+.chip.warn{color:var(--amber);border-color:#e6c288;background:var(--amber-bg)}
+.chip.bad{color:var(--red);border-color:#eda6ae;background:var(--red-bg)}
+.pw{padding:9px 9px 6px}
+.pw .v{font-family:var(--mono);font-size:22px;font-weight:600;line-height:1;color:var(--txt)}
+.pw .v u{text-decoration:none;font-size:10px;color:var(--txt-3);margin-left:3px}
+.pw .v.null{font-size:14px;color:var(--amber)}
+.pw.bad .v{color:var(--red)}
+.pw .k{font-size:8px;letter-spacing:.9px;text-transform:uppercase;color:var(--txt-3);margin-top:4px}
+.mg{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line)}
+.m{background:#fff;padding:6px 8px}
+.m .k{font-size:8px;letter-spacing:.7px;text-transform:uppercase;color:var(--txt-3)}
+.m .v{font-family:var(--mono);font-size:12px;margin-top:2px;color:var(--txt);font-weight:500}
+.m .v.ok{color:var(--green)} .m .v.warn{color:var(--amber)} .m .v.bad{color:var(--red)}
+.m .lim{font-size:7.5px;color:var(--txt-3);margin-top:1px}
+.plot{padding:6px 6px 2px;min-height:0;display:flex;flex-direction:column}
+.plot .cap{display:flex;justify-content:space-between;font-family:var(--mono);font-size:7.5px;letter-spacing:.5px;color:var(--txt-3);padding:0 3px 3px}
+.plot .box{position:relative;flex:1 1 auto;min-height:56px}
+.bfoot{
+  padding:5px 9px;border-top:1px solid var(--line);background:var(--card-2);
+  font-family:var(--mono);font-size:8px;color:var(--txt-3);display:flex;justify-content:space-between;gap:4px
+}
+.note{
+  margin:0 7px 7px;padding:6px 7px;border-radius:6px;border:1px solid #eda6ae;background:var(--red-bg);
+  color:#7f1020;font-size:9px;line-height:1.3
+}
+.note b{display:block;font-family:var(--mono);font-size:8px;letter-spacing:.8px;color:var(--red);margin-bottom:2px}
+
+/* ================= FOOTER STRIP ================= */
+.strip{
+  display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+  background:#fff;border:1px solid var(--line);border-radius:10px;padding:7px 10px;flex:0 0 auto
+}
+.strip .b{font-family:var(--mono);font-size:8.5px;letter-spacing:.4px;color:var(--txt-2);
+  border:1px solid var(--line);background:var(--card-2);padding:3px 7px;border-radius:5px;white-space:nowrap}
+.strip .b.crit{border-color:#eda6ae;background:var(--red-bg);color:#7f1020}
+.strip .b.warnb{border-color:#e6c288;background:var(--amber-bg);color:#7c4a08}
+.strip .msg{flex:1 1 200px;font-family:var(--mono);font-size:9px;color:var(--txt-3);text-align:right}
+.strip .msg.crit{color:var(--red)} .strip .msg.warn{color:var(--amber)}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="mark">PVL</div>
+    <div>
+      <h1>Protoverse Labs <span>|</span> Aqtiva CPT2000 Digital Twin</h1>
+      <p class="sub">5-Point Barrier-Preserved Array &middot; Architecture A &middot; SE-007 Rev 1.0</p>
+    </div>
+  </div>
+  <div class="sp"></div>
+  <div class="pill" id="hdr-class">SYNTHETIC — NOT FOR QUALIFICATION</div>
+  <div class="hstat"><div class="k">Timestamp UTC</div><div class="v" id="hdr-ts">—</div></div>
+  <div class="hstat"><div class="k">Uptime</div><div class="v" id="hdr-up">—</div></div>
+  <div class="hstat"><div class="k">V_s / f</div><div class="v" id="hdr-op">—</div></div>
+  <div class="hstat">
+    <div class="k">Telemetry Link</div>
+    <div class="link"><span class="led" id="hdr-led"></span><span id="hdr-link">INIT</span></div>
+  </div>
+</header>
+
+<div class="shell">
+
+  <!-- ==================== LEFT: MASTER CONTROL + SAFETY ==================== -->
+  <aside>
+
+    <section class="card">
+      <div class="card-h"><h2>Master Control</h2><span class="tag">SIM SETPOINTS</span></div>
+      <div class="card-b">
+
+        <!-- SUPPLY VOLTAGE -->
+        <div class="ctrl" id="ctrl-v">
+          <div class="ctrl-top">
+            <span class="lbl">Supply V_s (peak)</span>
+            <span class="val" id="v-read">30.0<u>kV</u></span>
+          </div>
+          <input type="range" id="v-slider" min="0" max="40" step="0.1" value="30">
+          <div class="scale"><span>0</span><span><b>30 DOC</b></span><span><b>36 PD</b></span><span>40 RAT</span></div>
+          <div class="btnrow">
+            <button class="mini" id="v-doc">SET 30.0 kV (APP. A)</button>
+            <button class="mini danger" id="v-zero">RAMP TO 0</button>
+          </div>
+          <label class="ovbox">
+            <input type="checkbox" id="v-ov">
+            <span><b>Acknowledge 30&ndash;36 kV overvoltage band.</b> 30 kV is the documented supply
+            and the ballast capacitors' continuous working voltage (App.&nbsp;A / Table&nbsp;6).
+            36 kV is the T1 PD test point only (&sect;3.6). &gt;36 kV is refused by the server &mdash;
+            40 kV is a component <i>insulation rating</i>, not an operating point.</span>
+          </label>
+        </div>
+
+        <!-- GAS -->
+        <div class="ctrl" id="ctrl-g">
+          <div class="ctrl-top">
+            <span class="lbl">O&#8322; setpoint / node</span>
+            <span class="val" id="g-read">—<u>sccm</u></span>
+          </div>
+          <input type="range" id="g-slider" min="5" max="15" step="0.1" value="10">
+          <div class="scale"><span><b>5</b></span><span>10</span><span><b>15</b></span></div>
+          <div class="scale" style="margin-top:3px"><span>Documented band, SE-007 Table 12 (&plusmn;5 %)</span></div>
+        </div>
+
+        <!-- WATER FLOW -->
+        <div class="ctrl" id="ctrl-w">
+          <div class="ctrl-top">
+            <span class="lbl">Water flow / node</span>
+            <span class="val" id="w-read">631.0<u>mL/min</u></span>
+          </div>
+          <input type="range" id="w-slider" min="50" max="1500" step="10" value="631">
+          <div class="scale"><span>50</span><span>750</span><span>1500</span></div>
+          <div class="scale" style="margin-top:3px"><span>Adjusts hydraulic throughput</span></div>
+        </div>
+
+        <!-- U_b : BLOCKED FIELD -->
+        <div class="ublock">
+          <div class="t">&#9888; U_b &mdash; BLOCKED FIELD (RFI-8)</div>
+          <div class="d">Discharge inception voltage is <b>not stated</b> in SE-005 or SE-007.
+            Closes with T0/T4. Any value entered is an <b>operator override</b>; frames are
+            stamped <span style="font-family:var(--mono)">NOT_DOCUMENT_TRACEABLE</span> and
+            <span style="font-family:var(--mono)">p_node_w</span> stays NULL until it is supplied.</div>
+          <div class="row">
+            <input type="number" id="u-in" placeholder="kV pk" step="0.05" min="0">
+            <button class="mini" id="u-set">APPLY</button>
+            <button class="mini danger" id="u-clr">CLEAR</button>
+          </div>
+        </div>
+
+        <div class="ack" id="ack">Awaiting first control action. Setpoint changes mutate the
+          simulation only and are not a control action on any asset.</div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-h"><h2>Array Totals</h2><span class="tag">SE-007 T.5 / T.12</span></div>
+      <div class="totals">
+        <div class="tot">
+          <div class="k">Power</div><div class="big" id="tot-p">—<u>W</u></div>
+          <div class="ref">ref 350 VA @ 500 Hz</div>
+        </div>
+        <div class="tot">
+          <div class="k">I_rms</div><div class="big" id="tot-i">—<u>mA</u></div>
+          <div class="ref">ref 16.5 mA</div>
+        </div>
+        <div class="tot">
+          <div class="k">Water</div><div class="big" id="tot-q">—<u>L/m</u></div>
+          <div class="ref">nom 0.47 L/min</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-h"><h2>Safety Interlock Chain</h2><span class="tag">[R4] PHASE III SOP</span></div>
+      <div class="card-b" id="ilk-body">
+        <div class="ilk"><span class="led"></span><span class="name">Awaiting interlock payload&hellip;</span></div>
+      </div>
+    </section>
+
+  </aside>
+
+  <!-- ==================== MAIN: REACTOR BAYS ==================== -->
+  <main>
+    <div class="bays" id="bays"></div>
+    <div class="strip">
+      <span class="b">SPREAD &le; &plusmn;10 %</span>
+      <span class="b">CHARGE &le; &plusmn;10 %</span>
+      <span class="b">STRIKE WINDOW &le; 2 kV</span>
+      <span class="b">FLOW &le; &plusmn;5 %</span>
+      <span class="b">AIR BREAK &ge; 25 mm</span>
+      <span class="b">R_liq &ge; 6.4 M&Omega;</span>
+      <span class="b" id="strip-blocked">BLOCKED: —</span>
+      <span class="msg" id="strip-msg">SE-007 Rev 1.0 Tables 5/12/16, App. A &amp; C &middot; RX-001 Rev A</span>
+    </div>
+  </main>
+
+</div>
+
+<script>
+'use strict';
+/* ===========================================================================
+   TRACEABLE CONSTANTS — every value quoted from released documents.
+   Nothing in this block is estimated, interpolated or invented.
+   =========================================================================== */
+const DOC = {
+  NODE_COUNT:          5,     // SE-007 §1.2
+  POWER_SPREAD_LIMIT:  0.10,  // SE-007 App. C / Table 16
+  DRY_SPREAD_REF:      0.15,  // SE-007 Table 17, T2
+  FLOW_NODE_NOMINAL:   94.0,  // SE-007 Table 12  mL/min per node
+  FLOW_TOL:            0.05,  // SE-007 Table 12  ±5 %
+  I_NODE_DESIGN_MA:    3.30,  // SE-007 Table 5 @ 500 Hz
+  V_S_DOCUMENTED_KV:   30.0,  // SE-007 App. A / Table 6 (continuous working)
+  V_S_PD_KV:           36.0,  // SE-007 §3.6 / T1  (PD < 10 pC at 1.2 × U_working)
+  V_S_RATING_KV:       40.0,  // SE-007 Table 6 / App. B — INSULATION RATING ONLY
+  GAS_MIN:             5.0,   // SE-007 Table 12
+  GAS_MAX:             15.0   // SE-007 Table 12
+};
+const EP_TELEMETRY = 'http://127.0.0.1:5000/telemetry';
+const EP_CONTROL   = 'http://127.0.0.1:5000/control';
+const POLL_MS = 1000, STALE_AFTER = 3;
+
+const ILK_META = {
+  loto_verified:                 {label:'HV Lockout / Tagout Verified', basis:'[R4] §6.4'},
+  exclusion_zone_1m_clear:       {label:'1 m Exclusion Zone Clear', basis:'[R4] §6.4'},
+  extraction_running:            {label:'Extraction + Ozone Monitoring', basis:'[R4] §6.4'},
+  ozone_ppm_at_operator:         {label:'Ozone at Operator Position', basis:'T5 < 0.1 ppm — BLOCKED, no sensor model'},
+  flow_switches_all_made:        {label:'Per-Branch Flow Switches (5)', basis:'Table 12 — dry-node protection ABSOLUTE'},
+  single_point_earth_verified:   {label:'Single-Point Earth Verified', basis:'Table 14 / H8 — no second bond'},
+  supply_within_documented_30kv: {label:'V_s within documented 30 kV', basis:'DERIVED GUARD — not a documented interlock'},
+  energise_permitted:            {label:'ENERGISE PERMITTED', basis:'Flow chain AND derived V_s guard'}
+};
+const PERMIT_KEYS   = ['energise_permitted','energize_permitted'];
+const ILK_SKIP_KEYS = ['_note','ozone_limit_ppm','dry_node_protection','capacitor_bleed_s',
+                       'post_run_flush_s','_supply_within_documented_30kv_basis',
+                       '_energise_permitted_basis'];
+
+/* =========================== STATE ======================================== */
+const charts = Object.create(null);
+const bayEls = Object.create(null);
+let failStreak = 0, lastGoodMs = 0;
+let dragging = false, pending = null, sendTimer = null;
+
+/* =========================== HELPERS ====================================== */
+const $   = (id)=>document.getElementById(id);
+const num = (v)=>(typeof v === 'number' && isFinite(v));
+const fmt = (v,d=2)=>num(v)?v.toFixed(d):'NULL';
+
+function fmtUptime(s){
+  if(!num(s)) return '—';
+  const t=Math.max(0,Math.floor(s));
+  return [Math.floor(t/3600),Math.floor((t%3600)/60),t%60]
+         .map(x=>String(x).padStart(2,'0')).join(':');
+}
+function fmtClock(ts){
+  if(typeof ts === 'string') return ts;
+  if(num(ts)) return new Date(ts*1000).toISOString().replace('T',' ').slice(0,19)+'Z';
+  return '—';
+}
+/* Units are declared by the payload key names v_kv / q_uc (server lissajous_vertices). */
+function normalizeLoop(raw){
+  if(!Array.isArray(raw)) return [];
+  const pts=[];
+  for(const p of raw){
+    let x,y;
+    if(Array.isArray(p) && p.length>=2){ x=p[0]; y=p[1]; }
+    else if(p && typeof p==='object'){
+      x=(p.v_kv ?? p.v ?? p.V ?? p.v_applied ?? p.voltage ?? p.x);
+      y=(p.q_uc ?? p.q ?? p.Q ?? p.charge ?? p.y);
+    } else continue;
+    x=Number(x); y=Number(y);
+    if(isFinite(x)&&isFinite(y)) pts.push({x,y});
+  }
+  if(pts.length>2){
+    const a=pts[0], b=pts[pts.length-1];
+    if(a.x!==b.x||a.y!==b.y) pts.push({x:a.x,y:a.y});  /* close for display only */
+  }
+  return pts;
+}
+function truthy3(v){
+  if(v===true||v===1||v==='OK'||v==='CLOSED') return true;
+  if(v===false||v===0||v==='FAIL'||v==='OPEN') return false;
+  return null;
+}
+
+/* =========================== HEADER / BANNER ============================== */
+function setLink(state,text){
+  $('hdr-led').className='led '+(state==='up'?'ok':state==='stale'?'warn':'bad');
+  $('hdr-link').textContent=text;
+}
+function setMsg(msg,level){
+  const m=$('strip-msg');
+  m.className='msg'+(level==='crit'?' crit':level==='warn'?' warn':'');
+  m.textContent=msg||'SE-007 Rev 1.0 Tables 5/12/16, App. A & C · RX-001 Rev A';
+}
+
+/* =========================== MASTER CONTROL =============================== */
+function paintVoltageTrack(kv){
+  const el=$('ctrl-v'), s=$('v-slider'), r=$('v-read');
+  const pDoc=(DOC.V_S_DOCUMENTED_KV/DOC.V_S_RATING_KV*100).toFixed(2);
+  const pPd =(DOC.V_S_PD_KV/DOC.V_S_RATING_KV*100).toFixed(2);
+  s.style.setProperty('--trk',
+    `linear-gradient(90deg,#0b6bcb 0%,#0b6bcb ${pDoc}%,#e0a44a ${pDoc}%,#e0a44a ${pPd}%,#e6b9bd ${pPd}%,#e6b9bd 100%)`);
+  const ov = kv > DOC.V_S_DOCUMENTED_KV;
+  el.classList.toggle('ov', ov);
+  r.className='val'+(ov?' ov':'');
+  r.innerHTML=kv.toFixed(1)+'<u>kV'+(ov?' · T1 PD BAND':'')+'</u>';
+}
+function ceilingKv(){ return $('v-ov').checked ? DOC.V_S_PD_KV : DOC.V_S_DOCUMENTED_KV; }
+
+function queueControl(patch){
+  pending = Object.assign(pending||{}, patch);
+  clearTimeout(sendTimer);
+  sendTimer = setTimeout(flushControl, 140);
+}
+async function flushControl(){
+  if(!pending) return;
+  const body = pending; pending = null;
+  const ack = $('ack');
+  ack.className='ack'; ack.textContent='SENDING '+JSON.stringify(body)+' …';
+  try{
+    const res = await fetch(EP_CONTROL,{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(body), cache:'no-store'
+    });
+    const j = await res.json();
+    const sp = j.setpoints||{};
+    const stamp = new Date().toISOString().slice(11,19);
+    if(j.status==='ACCEPTED'){
+      ack.className='ack ok';
+      ack.textContent=`ACK ${stamp}  V_s ${fmt(sp.v_s_peak_kv,1)} kV (V_rms ${fmt(sp.v_rms_kv,2)} kV)`+
+        `  ·  O₂ ${sp.gas_sccm===null?'—':fmt(sp.gas_sccm,1)+' sccm'}`+
+        `  ·  Water ${sp.water_flow_ml===null?'—':fmt(sp.water_flow_ml,1)+' mL/min'}`+
+        `  ·  U_b ${sp.u_b_kv===null?'NULL (RFI-8)':fmt(sp.u_b_kv,2)+' kV'}`;
+    } else {
+      ack.className='ack no';
+      const r=(j.rejected||[]).map(x=>`${x.field}=${x.value}: ${x.reason}`+(x.basis&&x.basis!=='-'?` [${x.basis}]`:'')).join('  |  ');
+      ack.textContent=`${j.status} ${stamp} — ${r||'no detail'}`;
+      /* Snap the UI back to the server's authoritative setpoint. */
+      if(num(sp.v_s_peak_kv)&&!dragging){ $('v-slider').value=sp.v_s_peak_kv; paintVoltageTrack(sp.v_s_peak_kv); }
+      if(num(sp.gas_sccm)&&!dragging){ $('g-slider').value=sp.gas_sccm; $('g-read').innerHTML=sp.gas_sccm.toFixed(1)+'<u>sccm</u>'; }
+      if(num(sp.water_flow_ml)&&!dragging){ $('w-slider').value=sp.water_flow_ml; $('w-read').innerHTML=sp.water_flow_ml.toFixed(1)+'<u>mL/min</u>'; }
+    }
+  }catch(err){
+    ack.className='ack no';
+    ack.textContent='CONTROL POST FAILED — '+EP_CONTROL+' unreachable. '+err;
+  }
+}
+
+function wireControls(){
+  const vs=$('v-slider'), gs=$('g-slider'), ws=$('w-slider');
+  ['pointerdown','touchstart'].forEach(e=>{
+    vs.addEventListener(e,()=>dragging=true); 
+    gs.addEventListener(e,()=>dragging=true); 
+    ws.addEventListener(e,()=>dragging=true);
+  });
+  ['pointerup','touchend','mouseleave'].forEach(e=>{
+    vs.addEventListener(e,()=>dragging=false); 
+    gs.addEventListener(e,()=>dragging=false); 
+    ws.addEventListener(e,()=>dragging=false);
+  });
+
+  vs.addEventListener('input',()=>{
+    let kv=parseFloat(vs.value);
+    const cap=ceilingKv();
+    if(kv>cap){                                  /* clamp client-side, explain why */
+      kv=cap; vs.value=String(cap);
+      setMsg(`SLIDER CLAMPED AT ${cap.toFixed(1)} kV — `+
+        (cap===DOC.V_S_DOCUMENTED_KV
+          ? 'DOCUMENTED SUPPLY / CONTINUOUS WORKING VOLTAGE (SE-007 APP. A, TABLE 6). ACKNOWLEDGE THE T1 BAND TO GO HIGHER.'
+          : 'PD-QUALIFIED CEILING (SE-007 §3.6 / T1). 40 kV IS AN INSULATION RATING, NOT AN OPERATING POINT.'),'warn');
+    }
+    paintVoltageTrack(kv);
+    queueControl({v_s_peak_kv:kv, overvoltage_override:$('v-ov').checked});
+  });
+
+  gs.addEventListener('input',()=>{
+    const g=parseFloat(gs.value);
+    $('g-read').innerHTML=g.toFixed(1)+'<u>sccm</u>';
+    queueControl({gas_sccm:g});
+  });
+
+  ws.addEventListener('input',()=>{
+    const w=parseFloat(ws.value);
+    $('w-read').innerHTML=w.toFixed(1)+'<u>mL/min</u>';
+    queueControl({water_flow_ml:w});
+  });
+
+  $('v-ov').addEventListener('change',()=>{
+    const kv=parseFloat(vs.value), cap=ceilingKv();
+    if(kv>cap){ vs.value=String(cap); paintVoltageTrack(cap); queueControl({v_s_peak_kv:cap, overvoltage_override:false}); }
+    else paintVoltageTrack(kv);
+  });
+
+  $('v-doc').addEventListener('click',()=>{
+    vs.value=String(DOC.V_S_DOCUMENTED_KV); paintVoltageTrack(DOC.V_S_DOCUMENTED_KV);
+    queueControl({v_s_peak_kv:DOC.V_S_DOCUMENTED_KV, overvoltage_override:$('v-ov').checked});
+  });
+  $('v-zero').addEventListener('click',()=>{   /* [R4] §6.4 manual ramp to zero */
+    vs.value='0'; paintVoltageTrack(0); queueControl({v_s_peak_kv:0});
+  });
+  $('u-set').addEventListener('click',()=>{
+    const u=parseFloat($('u-in').value);
+    if(isFinite(u)) queueControl({u_b_kv:u});
+  });
+  $('u-clr').addEventListener('click',()=>{$('u-in').value=''; queueControl({u_b_kv:null}); });
+
+  paintVoltageTrack(DOC.V_S_DOCUMENTED_KV);
+}
+
+/* Sync sliders from the server's authoritative setpoints when idle. */
+function syncControls(ctrl){
+  if(dragging || pending) return;
+  const sp=(ctrl&&ctrl.setpoints)||{};
+  if(num(sp.v_s_peak_kv)){
+    const vs=$('v-slider');
+    if(Math.abs(parseFloat(vs.value)-sp.v_s_peak_kv)>0.05){
+      vs.value=String(sp.v_s_peak_kv); paintVoltageTrack(sp.v_s_peak_kv);
+    }
+  }
+  const gr=$('g-read');
+  if(num(sp.gas_sccm)){
+    const gs=$('g-slider');
+    if(Math.abs(parseFloat(gs.value)-sp.gas_sccm)>0.05) gs.value=String(sp.gas_sccm);
+    gr.innerHTML=sp.gas_sccm.toFixed(1)+'<u>sccm</u>';
+    gr.className='val';
+  } else {
+    gr.innerHTML='NOT SET<u>RFI</u>'; gr.className='val warn';
+  }
+  const wr=$('w-read');
+  if(num(sp.water_flow_ml)){
+    const ws=$('w-slider');
+    if(Math.abs(parseFloat(ws.value)-sp.water_flow_ml)>5) ws.value=String(sp.water_flow_ml);
+    wr.innerHTML=sp.water_flow_ml.toFixed(1)+'<u>mL/min</u>';
+    wr.className='val';
+  } else {
+    wr.innerHTML='NOT SET<u>—</u>'; wr.className='val warn';
+  }
+  if(document.activeElement!==$('u-in'))$('u-in').value = num(sp.u_b_kv)?sp.u_b_kv:'';
+}
+
+/* =========================== INTERLOCK PANEL ============================== */
+function renderInterlocks(ilk){
+  const host=$('ilk-body');
+  if(!ilk||typeof ilk!=='object'){
+    host.innerHTML='<div class="ilk"><span class="led bad"></span><span class="name">No interlock object in payload'+
+      '<em>Chain state unknown — treat as NOT PERMITTED</em></span><span class="state bad">NO DATA</span></div>'+
+      '<div class="permit no">ENERGISE &mdash; NOT PERMITTED</div>';
+    return;
+  }
+  let html='', permitState=null, anyOpen=false;
+  for(const [key,val] of Object.entries(ilk)){
+    if(ILK_SKIP_KEYS.includes(key)) continue;
+    const meta=ILK_META[key.toLowerCase()]||{label:key,basis:'Payload key — undocumented'};
+    if(PERMIT_KEYS.includes(key.toLowerCase())){ permitState=truthy3(val); continue; }
+
+    if(Array.isArray(val)){
+      const st=val.map(truthy3);
+      const allOk=st.length>0&&st.every(s=>s===true), anyUnk=st.some(s=>s===null);
+      if(!allOk) anyOpen=true;
+      const cls=allOk?'ok':anyUnk?'warn':'bad';
+      html+=`<div class="ilk"><span class="led ${cls}"></span>
+        <span class="name">${meta.label}<em>${meta.basis}</em></span>
+        <span class="state ${cls}">${allOk?'FLOW OK':anyUnk?'PARTIAL':'OPEN'}</span></div>
+        <div class="subleds"><span class="lbl">BR</span>${
+          st.map((s,i)=>`<span class="led ${s===true?'ok':s===false?'bad':''}" title="Branch ${i+1}"></span>`).join('')}</div>`;
+      continue;
+    }
+    const s=truthy3(val);
+    const cls=s===true?'ok':s===false?'bad':'warn';
+    const txt=s===true?'CLOSED':s===false?'OPEN':(val===null?'NO DATA':String(val).toUpperCase().slice(0,14));
+    if(s!==true) anyOpen=true;
+    html+=`<div class="ilk"><span class="led ${cls}"></span>
+      <span class="name">${meta.label}<em>${meta.basis}</em></span>
+      <span class="state ${cls}">${txt}</span></div>`;
+  }
+  let pCls='permit', pTxt='ENERGISE PERMIT — UNDECLARED';
+  if(permitState===true ){ pCls='permit go'; pTxt='ENERGISE — PERMITTED'; }
+  if(permitState===false){ pCls='permit no'; pTxt='ENERGISE — NOT PERMITTED'; }
+  html+=`<div class="${pCls}">${pTxt}</div>`;
+  if(permitState===true&&anyOpen)
+    html+=`<div class="permit no" style="margin-top:6px">CHAIN CONFLICT — PERMIT ASSERTED WITH OPEN ELEMENT</div>`;
+  host.innerHTML=html;
+}
+
+/* =========================== NODE BAYS ==================================== */
+function buildBay(id){
+  const el=document.createElement('section');
+  el.className='bay';
+  el.innerHTML=`
+    <div class="bay-h">
+      <span class="led" data-led></span><span class="id">N${id}</span>
+      <span style="flex:1"></span><span class="chip" data-chip>—</span>
+    </div>
+    <div class="pw" data-pwwrap>
+      <div class="v" data-p>—<u>W</u></div>
+      <div class="k">Discharge Power · Lissajous</div>
+    </div>
+    <div class="mg">
+      <div class="m"><div class="k">I_rms</div><div class="v" data-i>—</div><div class="lim">ref 3.30 mA</div></div>
+      <div class="m"><div class="k">Spread Dev</div><div class="v" data-dev>—</div><div class="lim">±10 % App.C</div></div>
+      <div class="m"><div class="k">Water</div><div class="v" data-flow>—</div><div class="lim">94 ±5 %</div></div>
+      <div class="m"><div class="k">E / cycle</div><div class="v" data-area>—</div><div class="lim">mJ · server</div></div>
+    </div>
+    <div class="plot">
+      <div class="cap"><span>Q–V · kV / µC</span><span data-pts>0 pts</span></div>
+      <div class="box"><canvas data-canvas></canvas></div>
+    </div>
+    <div class="bfoot"><span data-vcell>V_cell —</span><span data-cb>C_b —</span></div>
+    <div class="note" data-note style="display:none"></div>`;
+  return el;
+}
+function ensureChart(id,canvas){
+  if(charts[id]) return charts[id];
+  charts[id]=new Chart(canvas.getContext('2d'),{
+    type:'scatter',
+    data:{datasets:[{data:[],showLine:true,borderColor:'#0b6bcb',borderWidth:1.5,
+                     pointRadius:0,tension:0,fill:false}]},
+    options:{
+      animation:false,responsive:true,maintainAspectRatio:false,parsing:false,normalized:true,
+      layout:{padding:{top:2,right:4,bottom:0,left:0}},
+      plugins:{legend:{display:false},tooltip:{enabled:false}},
+      scales:{
+        x:{grid:{color:'#eef1f6'},border:{color:'#dde3ec'},
+           ticks:{color:'#8492a6',font:{family:'JetBrains Mono',size:7},maxTicksLimit:4}},
+        y:{grid:{color:'#eef1f6'},border:{color:'#dde3ec'},
+           ticks:{color:'#8492a6',font:{family:'JetBrains Mono',size:7},maxTicksLimit:4}}
+      }
+    }
+  });
+  return charts[id];
+}
+
+function renderNodes(nodes){
+  const host=$('bays');
+  if(!Array.isArray(nodes)) return;
+  let faults=0,warns=0;
+
+  nodes.forEach((n,idx)=>{
+    const id=(n.node_id??(idx+1));
+    if(!bayEls[id]){
+      const el=buildBay(id); host.appendChild(el);
+      bayEls[id]={root:el,led:el.querySelector('[data-led]'),chip:el.querySelector('[data-chip]'),
+        pwwrap:el.querySelector('[data-pwwrap]'),p:el.querySelector('[data-p]'),
+        i:el.querySelector('[data-i]'),dev:el.querySelector('[data-dev]'),
+        flow:el.querySelector('[data-flow]'),area:el.querySelector('[data-area]'),
+        pts:el.querySelector('[data-pts]'),vcell:el.querySelector('[data-vcell]'),
+        cb:el.querySelector('[data-cb]'),note:el.querySelector('[data-note]'),
+        canvas:el.querySelector('[data-canvas]')};
+    }
+    const r=bayEls[id];
+
+    /* ---- classification ---- */
+    const breach = n.acceptance_breach===true;
+    const devAbs = num(n.deviation_from_array_mean)?Math.abs(n.deviation_from_array_mean):null;
+    const devWarn= devAbs!==null && devAbs>DOC.POWER_SPREAD_LIMIT*0.8 && devAbs<=DOC.POWER_SPREAD_LIMIT;
+    const flowDev= num(n.water_ml_min)?Math.abs(n.water_ml_min-DOC.FLOW_NODE_NOMINAL)/DOC.FLOW_NODE_NOMINAL:null;
+    const flowBad= flowDev!==null && flowDev>DOC.FLOW_TOL;
+    const noStrike = n.struck===false;
+
+    let cls='',chip='NOMINAL',chipCls='chip ok',ledCls='led ok';
+    if(breach){ cls='fault';chip='BREACH';chipCls='chip bad';ledCls='led bad';faults++; }
+    else if(noStrike){ cls='warn';chip='NO STRIKE';chipCls='chip warn';ledCls='led warn';warns++; }
+    else if(devWarn||flowBad){ cls='warn';chip='WATCH';chipCls='chip warn';ledCls='led warn';warns++; }
+    r.root.className='bay'+(cls?' '+cls:'');
+    r.chip.className=chipCls; r.chip.textContent=chip;
+    r.led.className=ledCls;
+
+    /* ---- metrics ---- */
+    r.pwwrap.className='pw'+(breach?' bad':'');
+    r.p.className='v'+(num(n.p_node_w)?'':' null');
+    r.p.innerHTML=(num(n.p_node_w)?fmt(n.p_node_w,2):'NULL')+'<u>W</u>';
+
+    r.i.textContent=num(n.i_rms_ma)?fmt(n.i_rms_ma,2)+' mA':'NULL';
+
+    if(devAbs===null){ r.dev.textContent='NULL'; r.dev.className='v'; }
+    else{
+      r.dev.textContent=(n.deviation_from_array_mean>=0?'+':'−')+(devAbs*100).toFixed(2)+' %';
+      r.dev.className='v '+(devAbs>DOC.POWER_SPREAD_LIMIT?'bad':devWarn?'warn':'ok');
+    }
+    if(num(n.water_ml_min)){
+      r.flow.textContent=fmt(n.water_ml_min,1);
+      r.flow.className='v '+(flowBad?'warn':'ok');
+    } else { r.flow.textContent='NULL'; r.flow.className='v'; }
+
+    /* Server-published area (traceable) in mJ; NOT recomputed client-side. */
+    r.area.textContent = num(n.lissajous_area_j) ? (n.lissajous_area_j*1e3).toPrecision(3) : 'NULL';
+    r.area.className='v';
+
+    r.vcell.textContent='V_cell '+(num(n.v_cell_peak_kv)?fmt(n.v_cell_peak_kv,2)+' kV':'—');
+    r.cb.textContent='C_b '+(num(n.c_b_pf)?fmt(n.c_b_pf,2)+' pF':'—')+
+                     ' k '+(num(n.sharing_ratio_k)?n.sharing_ratio_k.toFixed(4):'—');
+
+    /* ---- Lissajous ---- */
+    const pts=normalizeLoop(n.lissajous_loop_qv);
+    const ch=ensureChart(id,r.canvas);
+    ch.data.datasets[0].data=pts;
+    ch.data.datasets[0].borderColor = breach?'#c81e2b':(cls==='warn')?'#b45309':'#0b6bcb';
+    ch.update('none');
+    r.pts.textContent = pts.length ? pts.length+' pts' : (n.struck===false?'NO STRIKE':'U_b BLOCKED');
+
+    /* ---- fault note ---- */
+    if(breach){
+      const note=(typeof n.fault_note==='string'&&n.fault_note.trim().length)
+        ? n.fault_note
+        : 'acceptance_breach asserted with no fault_note supplied by the telemetry server.';
+      r.note.style.display='block';
+      r.note.innerHTML='<b>FAULT — NODE '+id+'</b>'+note;
+    } else { r.note.style.display='none'; r.note.innerHTML=''; }
+  });
+
+  if(faults>0){
+    setMsg(`ACCEPTANCE BREACH ON ${faults} NODE(S) — ±10 % NODE-TO-NODE POWER SPREAD `+
+           `(SE-007 APP. C) EXCEEDED. ARRAY NOT ACCEPTABLE FOR DUTY.`,'crit');
+  } else if(warns>0){
+    setMsg(`${warns} NODE(S) FLAGGED — CHECK STRIKE STATUS, FLOW BALANCE (±5 %, TABLE 12) AND SPREAD TREND.`,'warn');
+  } else if(nodes.length!==DOC.NODE_COUNT){
+    setMsg(`NODE COUNT ${nodes.length} ≠ ${DOC.NODE_COUNT} (SE-007 §1.2)`,'crit');
+  } else setMsg('',null);
+}
+
+/* =========================== POLL LOOP — 1000 ms ========================== */
+async function fetchTelemetry(){
+  try{
+    const res=await fetch(EP_TELEMETRY,{cache:'no-store'});
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    const data=await res.json();
+    failStreak=0; lastGoodMs=Date.now();
+    setLink('up','LIVE · 1 Hz');
+
+    $('hdr-class').textContent = data.data_class || 'UNDECLARED DATA CLASS';
+    $('hdr-ts').textContent = fmtClock(data.timestamp_utc);$('hdr-up').textContent = fmtUptime(data.uptime_s);
+
+    const op=data.operating_point||{};
+    $('hdr-op').textContent =
+      (num(op.v_supply_peak_kv)?fmt(op.v_supply_peak_kv,1):'—')+' kV / '+
+      (num(op.excitation_frequency_hz)?op.excitation_frequency_hz+' Hz':'—');
+
+    const ar=data.array||{};
+    const tp=$('tot-p');
+    tp.className='big'+(num(ar.p_array_total_w)?'':' null');
+    tp.innerHTML=(num(ar.p_array_total_w)?fmt(ar.p_array_total_w,2):'NULL')+'<u>W</u>';
+    $('tot-i').innerHTML=(num(ar.i_array_total_ma)?fmt(ar.i_array_total_ma,2):'NULL')+'<u>mA</u>';$('tot-q').innerHTML=(num(ar.water_total_l_min)?fmt(ar.water_total_l_min,3):'NULL')+'<u>L/m</u>';
+
+    const bl=Array.isArray(data.blocked_fields)?data.blocked_fields:[];
+    const sb=$('strip-blocked');
+    sb.textContent='BLOCKED: '+(bl.length?bl.join(', '):'none');
+    sb.className='b'+(bl.length?' warnb':'');
+
+    syncControls(data.control);
+    renderInterlocks(data.interlocks);
+    renderNodes(data.nodes);
+
+  }catch(err){
+    failStreak++;
+    console.error('[CPT2000] telemetry fetch failed:',err);
+    if(failStreak>=STALE_AFTER){
+      setLink('down','LINK LOST');
+      const age=lastGoodMs?Math.round((Date.now()-lastGoodMs)/1000)+' s':'never';
+      setMsg(`TELEMETRY LINK LOST — ${EP_TELEMETRY} UNREACHABLE (${failStreak} POLLS). `+
+             `VALUES STALE (LAST GOOD ${age} AGO). DO NOT USE FOR ACCEPTANCE.`,'crit');
+    } else setLink('stale','RETRYING');
+  }
+}
+
+wireControls();
+setInterval(fetchTelemetry,POLL_MS);
+fetchTelemetry();
+</script>
+</body>
+</html>
