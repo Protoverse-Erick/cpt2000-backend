@@ -476,7 +476,7 @@ class MockArray:
 # SECTION 7 — FLASK APP
 # =============================================================================
 app = Flask(__name__)
-ARRAY = MockArray()
+ARRAY = MockArray(DEFAULT_CONFIG)
 
 @app.after_request
 def _cors(resp):
