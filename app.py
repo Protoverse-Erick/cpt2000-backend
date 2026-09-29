@@ -200,7 +200,7 @@ def build_array(rng: random.Random, max_attempts: int = 5000) -> list[NodeBuild]
 # SECTION 5 — LIVE SETPOINT STATE + FRAME GENERATION
 # =============================================================================
 class MockArray:
-    def __init__(self, cfg: argparse.Namespace):
+    def __init__(self, cfg):
         self.cfg = cfg
         self.rng = random.Random(cfg.seed)
         self.noise_rng = random.Random(cfg.seed + 1)
@@ -210,12 +210,11 @@ class MockArray:
 
         self._lock = threading.Lock()
         self.f_hz = cfg.frequency
-        self.v_s_peak_v = cfg.v_s_kv * 1000.0  # Dynamic starting voltage
+        self.v_s_peak_v = cfg.v_s_kv * 1000.0  
         self.u_b_v = cfg.u_b_kv * 1000.0 if cfg.u_b_kv is not None else None
         self.u_b_source = "CLI_OPERATOR_OVERRIDE" if self.u_b_v is not None else None
         self.gas_sccm = cfg.gas_sccm
         
-        # New dynamic water flow setpoint (mL/min/node)
         self.water_flow_sp = 631.0 
         self.control_log: list[dict] = []
 
@@ -282,12 +281,10 @@ class MockArray:
             except (TypeError, ValueError):
                 return None
 
-        # ---------- supply voltage ----------
         v_new = None
         if "v_s_peak_kv" in payload:
             v = _num("v_s_peak_kv")
             v_new = None if v is None else v * 1000.0
-            v_key = "v_s_peak_kv"
         if v_new is not None:
             if v_new < V_S_MIN_V or v_new > V_S_PD_QUALIFIED_V:
                 pass
@@ -295,7 +292,6 @@ class MockArray:
                 with self._lock: self.v_s_peak_v = v_new
                 applied["v_s_peak_kv"] = round(v_new / 1000.0, 4)
 
-        # ---------- water flow ----------
         if "water_flow_ml" in payload:
             w = _num("water_flow_ml")
             if w is not None:
@@ -303,14 +299,12 @@ class MockArray:
                     self.water_flow_sp = w
                 applied["water_flow_ml"] = round(w, 2)
 
-        # ---------- gas ----------
         if "gas_sccm" in payload:
             g = _num("gas_sccm")
             if g is not None:
                 with self._lock: self.gas_sccm = g
                 applied["gas_sccm"] = round(g, 3)
 
-        # ---------- U_b ----------
         if "u_b_kv" in payload:
             u = _num("u_b_kv")
             if u is not None:
@@ -371,7 +365,6 @@ class MockArray:
             else:
                 area_j, p_w, loop, struck = None, None, [], None
 
-            # Dynamic water flow implemented here
             flow = water_sp * (1.0 + self.noise_rng.uniform(-WATER_TOL, WATER_TOL))
             gas = (None if gas_sp is None else gas_sp * (1.0 + self.noise_rng.uniform(-GAS_TOL, GAS_TOL)))
 
@@ -420,7 +413,7 @@ class MockArray:
                 "ballast_dissipation_w": BALLAST_REAL_DISSIPATION_W,
                 "water_ml_min": round(r["flow"], 2),
                 "o2_sccm": (None if r["gas"] is None else round(r["gas"], 3)),
-                "flow_switch_ok": abs(r["flow"] - water_sp) / water_sp <= WATER_TOL, # Updated to use dynamic setpoint
+                "flow_switch_ok": abs(r["flow"] - water_sp) / water_sp <= WATER_TOL,
                 "deviation_from_array_mean": round(dev, 5),
                 "acceptance_breach": abs(dev) > LIM_POWER_SPREAD,
                 "injected_fault": False,
@@ -476,7 +469,17 @@ class MockArray:
 # SECTION 7 — FLASK APP
 # =============================================================================
 app = Flask(__name__)
-ARRAY = MockArray(DEFAULT_CONFIG)
+
+class ProductionConfig:
+    frequency = F_NOMINAL_HZ
+    u_b_kv = 3.6
+    v_s_kv = 22.4
+    gas_sccm = 15.0
+    interval = 1.0
+    seed = 20260907
+    port = 5000
+
+ARRAY = MockArray(ProductionConfig())
 
 @app.after_request
 def _cors(resp):
@@ -484,6 +487,7 @@ def _cors(resp):
     resp.headers["Access-Control-Allow-Headers"] = "Content-Type"
     resp.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
     return resp
+
 from flask import send_from_directory
 
 @app.get("/")
@@ -516,9 +520,7 @@ def control():
 def parse_args():
     p = argparse.ArgumentParser()
     p.add_argument("--frequency", type=float, default=F_NOMINAL_HZ)
-    # Default set to 3.6 kV so graphs populate automatically
     p.add_argument("--u-b-kv", type=float, default=3.6)
-    # Default supply set to 22.4 kV (80% 500W limit)
     p.add_argument("--v-s-kv", type=float, default=22.4)
     p.add_argument("--gas-sccm", type=float, default=15.0)
     p.add_argument("--interval", type=float, default=1.0)
